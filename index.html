@@ -12,14 +12,14 @@
       padding: 2rem;
     }
     .container {
-      max-width: 600px;
+      max-width: 700px;
       margin: 0 auto;
       background: white;
       padding: 2rem;
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-    input, button {
+    input, textarea, button {
       padding: 0.5rem;
       margin: 0.5rem 0;
       width: 100%;
@@ -29,3 +29,100 @@
       margin-top: 2rem;
       background: #e8f4ff;
       padding: 1rem;
+      border-radius: 8px;
+    }
+    textarea {
+      resize: vertical;
+      height: 100px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Hokejový Simulátor</h1>
+
+    <input type="text" id="teamA" placeholder="Název týmu A" />
+    <input type="number" id="ratingA" placeholder="Rating týmu A (0-100)" />
+    <textarea id="rosterA" placeholder="Soupiska týmu A (21 hráčů - 12 útočníků, 8 obránců, 1 brankář)"></textarea>
+
+    <input type="text" id="teamB" placeholder="Název týmu B" />
+    <input type="number" id="ratingB" placeholder="Rating týmu B (0-100)" />
+    <textarea id="rosterB" placeholder="Soupiska týmu B (21 hráčů - 12 útočníků, 8 obránců, 1 brankář)"></textarea>
+
+    <button onclick="simulateMatch()">Simulovat zápas</button>
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    function simulateMatch() {
+      const teamA = document.getElementById('teamA').value;
+      const ratingA = parseInt(document.getElementById('ratingA').value);
+      const rosterA = document.getElementById('rosterA').value.split('\n').map(p => p.trim()).filter(p => p);
+
+      const teamB = document.getElementById('teamB').value;
+      const ratingB = parseInt(document.getElementById('ratingB').value);
+      const rosterB = document.getElementById('rosterB').value.split('\n').map(p => p.trim()).filter(p => p);
+
+      if (rosterA.length !== 21 || rosterB.length !== 21) {
+        alert("Každý tým musí mít přesně 21 hráčů (12 útočníků, 8 obránců, 1 brankář)");
+        return;
+      }
+
+      const totalRating = ratingA + ratingB;
+      const ratioA = ratingA / totalRating;
+      const ratioB = ratingB / totalRating;
+
+      const shotsA = Math.max(15, Math.round(randomNormal(30 * ratioA, 4)));
+      const shotsB = Math.max(15, Math.round(randomNormal(30 * ratioB, 4)));
+
+      const savePctA = randomNormal(0.9, 0.02);
+      const savePctB = randomNormal(0.9, 0.02);
+
+      const goalsA = Math.max(0, shotsA - Math.round(shotsB * savePctB));
+      const goalsB = Math.max(0, shotsB - Math.round(shotsA * savePctA));
+
+      const savesA = shotsB - goalsB;
+      const savesB = shotsA - goalsA;
+
+      const scorersA = generateScorers(rosterA, goalsA);
+      const scorersB = generateScorers(rosterB, goalsB);
+
+      document.getElementById('result').innerHTML = `
+        <strong>${teamA} ${goalsA}:${goalsB} ${teamB}</strong><br><br>
+        <em>Střelci ${teamA}:</em><br>${formatScorers(scorersA)}<br><br>
+        <em>Střelci ${teamB}:</em><br>${formatScorers(scorersB)}<br><br>
+        <ul>
+          <li><strong>${teamA}</strong> - Rating: ${ratingA}, Střely: ${shotsA}, Góly: ${goalsA}, Zákroky: ${savesA}</li>
+          <li><strong>${teamB}</strong> - Rating: ${ratingB}, Střely: ${shotsB}, Góly: ${goalsB}, Zákroky: ${savesB}</li>
+        </ul>
+      `;
+    }
+
+    function generateScorers(roster, goals) {
+      const forwards = roster.slice(0, 12);
+      const defenders = roster.slice(12, 20);
+      const scorers = [];
+      for (let i = 0; i < goals; i++) {
+        const isForward = Math.random() < 0.7;
+        const pool = isForward ? forwards : defenders;
+        const name = pool[Math.floor(Math.random() * pool.length)];
+        const minute = Math.floor(Math.random() * 60) + 1;
+        scorers.push({ name, minute });
+      }
+      return scorers.sort((a, b) => a.minute - b.minute);
+    }
+
+    function formatScorers(scorers) {
+      if (scorers.length === 0) return "Žádné góly";
+      return scorers.map(s => `${s.minute}'. ${s.name}`).join('<br>');
+    }
+
+    function randomNormal(mean, stdDev) {
+      let u = 0, v = 0;
+      while(u === 0) u = Math.random();
+      while(v === 0) v = Math.random();
+      return mean + stdDev * Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    }
+  </script>
+</body>
+</html>
