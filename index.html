@@ -38,53 +38,130 @@
   <div class="container">
     <h1>Hokejový Simulátor</h1>
     <input type="text" id="teamA" placeholder="Název týmu A" />
-    <textarea id="forwardsA" placeholder="12 útočníků týmu A (oddělené čárkou)"></textarea>
-    <textarea id="defendersA" placeholder="8 obránců týmu A (oddělené čárkou)"></textarea>
-    <input type="text" id="goalieA" placeholder="Brankář týmu A" />
     <input type="number" id="ratingA" placeholder="Rating týmu A (0-100)" />
-
+    <textarea id="attackersA" placeholder="Útočníci týmu A (odděleno čárkou)"></textarea>
+    <textarea id="defendersA" placeholder="Obránci týmu A (odděleno čárkou)"></textarea>
+    <input type="text" id="goalieA" placeholder="Brankář týmu A" />
     <input type="text" id="teamB" placeholder="Název týmu B" />
-    <textarea id="forwardsB" placeholder="12 útočníků týmu B (oddělené čárkou)"></textarea>
-    <textarea id="defendersB" placeholder="8 obránců týmu B (oddělené čárkou)"></textarea>
-    <input type="text" id="goalieB" placeholder="Brankář týmu B" />
     <input type="number" id="ratingB" placeholder="Rating týmu B (0-100)" />
-
+    <textarea id="attackersB" placeholder="Útočníci týmu B (odděleno čárkou)"></textarea>
+    <textarea id="defendersB" placeholder="Obránci týmu B (odděleno čárkou)"></textarea>
+    <input type="text" id="goalieB" placeholder="Brankář týmu B" />
     <button onclick="simulateMatch()">Simulovat zápas</button>
-
     <div class="result" id="result"></div>
   </div>
 
   <script>
+    function randomNormal(mean, stdDev) {
+      let u = 0, v = 0;
+      while(u === 0) u = Math.random();
+      while(v === 0) v = Math.random();
+      return mean + stdDev * Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    }
+
+    function getRandomPlayer(list) {
+      return list[Math.floor(Math.random() * list.length)].trim();
+    }
+
+    function pickScorer(attackers, defenders) {
+      return Math.random() < 0.7 ? getRandomPlayer(attackers) : getRandomPlayer(defenders);
+    }
+
+    function pickAssistants(allPlayers, goalie) {
+      const rand = Math.random();
+      let assistants = [];
+      if (rand < 0.05) return assistants;
+      else if (rand < 0.30) assistants.push(getAssistant(allPlayers, goalie));
+      else assistants.push(getAssistant(allPlayers, goalie), getAssistant(allPlayers, goalie));
+      return assistants;
+    }
+
+    function getAssistant(allPlayers, goalie) {
+      const rand = Math.random();
+      if (rand < 0.49) return getRandomPlayer(allPlayers.attackers);
+      else if (rand < 0.99) return getRandomPlayer(allPlayers.defenders);
+      else return goalie;
+    }
+
     function simulateMatch() {
       const teamA = document.getElementById('teamA').value;
-      const teamB = document.getElementById('teamB').value;
-      const forwardsA = document.getElementById('forwardsA').value.split(',').map(x => x.trim()).filter(x => x);
-      const defendersA = document.getElementById('defendersA').value.split(',').map(x => x.trim()).filter(x => x);
-      const goalieA = document.getElementById('goalieA').value.trim();
       const ratingA = parseInt(document.getElementById('ratingA').value);
+      const attackersA = document.getElementById('attackersA').value.split(',');
+      const defendersA = document.getElementById('defendersA').value.split(',');
+      const goalieA = document.getElementById('goalieA').value;
 
-      const forwardsB = document.getElementById('forwardsB').value.split(',').map(x => x.trim()).filter(x => x);
-      const defendersB = document.getElementById('defendersB').value.split(',').map(x => x.trim()).filter(x => x);
-      const goalieB = document.getElementById('goalieB').value.trim();
+      const teamB = document.getElementById('teamB').value;
       const ratingB = parseInt(document.getElementById('ratingB').value);
+      const attackersB = document.getElementById('attackersB').value.split(',');
+      const defendersB = document.getElementById('defendersB').value.split(',');
+      const goalieB = document.getElementById('goalieB').value;
 
-      // Simulace výsledku dle rozdělení 80% základní čas, 15% prodloužení, 5% nájezdy
-      const rnd = Math.random();
+      const totalRating = ratingA + ratingB;
+      const ratioA = ratingA / totalRating;
+      const ratioB = ratingB / totalRating;
+
+      const shotsA = Math.max(15, Math.round(randomNormal(30 * ratioA, 5)));
+      const shotsB = Math.max(15, Math.round(randomNormal(30 * ratioB, 5)));
+
+      const savePctA = randomNormal(0.91, 0.02);
+      const savePctB = randomNormal(0.91, 0.02);
+
+      let goalsA = Math.max(0, shotsA - Math.round(shotsB * savePctB));
+      let goalsB = Math.max(0, shotsB - Math.round(shotsA * savePctA));
+
       let overtime = false;
       let shootout = false;
 
-      if (rnd < 0.15) {
-        overtime = true;
-      } else if (rnd < 0.20) {
-        shootout = true;
+      if (goalsA === goalsB) {
+        const rand = Math.random();
+        if (rand < 0.15) {
+          // Overtime
+          overtime = true;
+          const scorer = Math.random() < 0.5 ? 'A' : 'B';
+          if (scorer === 'A') goalsA++;
+          else goalsB++;
+        } else if (rand < 0.20) {
+          // Shootout
+          shootout = true;
+          const scorer = Math.random() < 0.5 ? 'A' : 'B';
+          if (scorer === 'A') goalsA++;
+          else goalsB++;
+        }
       }
 
-      // Zbytek simulace bude pokračovat zde – přidat výstupní logiku, góly, asistence atd.
+      const scorersA = [], scorersB = [];
+      for (let i = 0; i < goalsA; i++) {
+        const minute = Math.floor(Math.random() * 60) + 1;
+        const scorer = pickScorer(attackersA, defendersA);
+        const assists = pickAssistants({ attackers: attackersA, defenders: defendersA }, goalieA);
+        scorersA.push(`${minute}' ${scorer}${assists.length ? ` (Asistence: ${assists.join(', ')})` : ''}`);
+      }
 
-      // Zatím placeholder výstup
-      document.getElementById('result').innerText = `Zápas mezi ${teamA} a ${teamB} ${
-        overtime ? '(rozhodnuto v prodloužení)' : shootout ? '(rozhodnuto po nájezdech)' : '(v základní hrací době)'
-      }.`;
+      for (let i = 0; i < goalsB; i++) {
+        const minute = Math.floor(Math.random() * 60) + 1;
+        const scorer = pickScorer(attackersB, defendersB);
+        const assists = pickAssistants({ attackers: attackersB, defenders: defendersB }, goalieB);
+        scorersB.push(`${minute}' ${scorer}${assists.length ? ` (Asistence: ${assists.join(', ')})` : ''}`);
+      }
+
+      const resultSuffix = shootout ? 'sn' : overtime ? 'pp' : '';
+      const scoreLine = `${teamA} ${goalsA}:${goalsB}${resultSuffix ? resultSuffix : ''} ${teamB}`;
+
+      const savesA = shotsB - goalsB;
+      const savesB = shotsA - goalsA;
+
+      document.getElementById('result').innerText = `
+${scoreLine}
+
+${teamA} – Rating: ${ratingA}, Střely: ${shotsA}, Zákroky: ${savesA}
+${teamB} – Rating: ${ratingB}, Střely: ${shotsB}, Zákroky: ${savesB}
+
+Střelci týmu ${teamA}:
+${scorersA.length ? scorersA.join('\n') : 'žádný'}
+
+Střelci týmu ${teamB}:
+${scorersB.length ? scorersB.join('\n') : 'žádný'}
+      `;
     }
   </script>
 </body>
