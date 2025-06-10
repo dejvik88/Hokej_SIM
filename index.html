@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hokejový Simulátor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      margin: 0;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    input, button {
+      padding: 0.5rem;
+      margin: 0.5rem 0;
+      width: 100%;
+      font-size: 1rem;
+    }
+    .result {
+      margin-top: 2rem;
+      background: #e8f4ff;
+      padding: 1rem;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Hokejový Simulátor</h1>
+    <input type="text" id="teamA" placeholder="Název týmu A" />
+    <input type="number" id="ratingA" placeholder="Rating týmu A (0-100)" />
+    <input type="text" id="teamB" placeholder="Název týmu B" />
+    <input type="number" id="ratingB" placeholder="Rating týmu B (0-100)" />
+    <button onclick="simulateMatch()">Simulovat zápas</button>
+
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    function simulateMatch() {
+      const teamA = document.getElementById('teamA').value;
+      const ratingA = parseInt(document.getElementById('ratingA').value);
+      const teamB = document.getElementById('teamB').value;
+      const ratingB = parseInt(document.getElementById('ratingB').value);
+
+      const totalRating = ratingA + ratingB;
+      const ratioA = ratingA / totalRating;
+      const ratioB = ratingB / totalRating;
+
+      const shotsA = Math.max(15, Math.round(randomNormal(30 * ratioA, 4)));
+      const shotsB = Math.max(15, Math.round(randomNormal(30 * ratioB, 4)));
+
+      const savePctA = randomNormal(0.9, 0.02);
+      const savePctB = randomNormal(0.9, 0.02);
+
+      const goalsA = Math.max(0, shotsA - Math.round(shotsB * savePctB));
+      const goalsB = Math.max(0, shotsB - Math.round(shotsA * savePctA));
+
+      const savesA = shotsB - goalsB;
+      const savesB = shotsA - goalsA;
+
+      document.getElementById('result').innerHTML = `
+        <strong>${teamA}</strong> vs <strong>${teamB}</strong><br>
+        <ul>
+          <li><strong>${teamA}</strong> - Rating: ${ratingA}, Střely: ${shotsA}, Góly: ${goalsA}, Zákroky: ${savesA}</li>
+          <li><strong>${teamB}</strong> - Rating: ${ratingB}, Střely: ${shotsB}, Góly: ${goalsB}, Zákroky: ${savesB}</li>
+        </ul>
+      `;
+    }
+
+    function randomNormal(mean, stdDev) {
+      let u = 0, v = 0;
+      while(u === 0) u = Math.random();
+      while(v === 0) v = Math.random();
+      return mean + stdDev * Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    }
+  </script>
+</body>
+</html>
