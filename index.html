@@ -1,255 +1,190 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hokejový Simulátor</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f0f0f0;
-      margin: 0;
-      padding: 2rem;
-    }
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      background: white;
-      padding: 2rem;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    input, button, textarea {
-      padding: 0.5rem;
-      margin: 0.5rem 0;
-      width: 100%;
-      font-size: 1rem;
-    }
-    .result {
-      margin-top: 2rem;
-      background: #e8f4ff;
-      padding: 1rem;
-      border-radius: 8px;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hokejový Simulátor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      margin: 0;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    input, button, textarea {
+      padding: 0.5rem;
+      margin: 0.5rem 0;
+      width: 100%;
+      font-size: 1rem;
+    }
+    .result {
+      margin-top: 2rem;
+      background: #e8f4ff;
+      padding: 1rem;
+      border-radius: 8px;
+    }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Hokejový Simulátor</h1>
-    <input type="text" id="teamA" placeholder="Název týmu A" />
-    <input type="number" id="ratingA" placeholder="Rating týmu A (0-100)" />
-    <textarea id="rosterA" rows="5" placeholder="Soupiska týmu A - 12 útočníků, 8 obránců, 1 brankář"></textarea>
-    <input type="text" id="teamB" placeholder="Název týmu B" />
-    <input type="number" id="ratingB" placeholder="Rating týmu B (0-100)" />
-    <textarea id="rosterB" rows="5" placeholder="Soupiska týmu B - 12 útočníků, 8 obránců, 1 brankář"></textarea>
-    <button onclick="simulateMatch()">Simulovat zápas</button>
+  <div class="container">
+    <h1>Hokejový Simulátor</h1>
+    <input type="text" id="teamA" placeholder="Název týmu A" />
+    <input type="number" id="ratingA" placeholder="Rating týmu A (0-100)" />
+    <textarea id="rosterA" rows="5" placeholder="Soupiska týmu A - každý hráč na nový řádek (12 útočníků, 8 obránců, 1 brankář)"></textarea>
+    <input type="text" id="teamB" placeholder="Název týmu B" />
+    <input type="number" id="ratingB" placeholder="Rating týmu B (0-100)" />
+    <textarea id="rosterB" rows="5" placeholder="Soupiska týmu B - každý hráč na nový řádek (12 útočníků, 8 obránců, 1 brankář)"></textarea>
+    <button onclick="simulateMatch()">Simulovat zápas</button>
+    <div class="result" id="result"></div>
+  </div>
+  <script>
+function simulateShootout(forwardsA, defendersA, forwardsB, defendersB) {
+  const scorersA = [];
+  const scorersB = [];
+  const getShooter = (forwards, defenders) => {
+    return Math.random() < 0.95
+      ? forwards[Math.floor(Math.random() * forwards.length)]
+      : defenders[Math.floor(Math.random() * defenders.length)];
+  };
 
-    <div class="result" id="result"></div>
-  </div>
+  let goalsA = 0, goalsB = 0;
+  let minute = 66;
 
-  <script>
-    function simulateMatch() {
-      const teamA = document.getElementById('teamA').value;
-      const ratingA = parseInt(document.getElementById('ratingA').value);
-      const teamB = document.getElementById('teamB').value;
-      const ratingB = parseInt(document.getElementById('ratingB').value);
-      const rosterA = document.getElementById('rosterA').value.trim().split('\n');
-      const rosterB = document.getElementById('rosterB').value.trim().split('\n');
+  for (let i = 0; i < 5; i++) {
+    const shooterA = getShooter(forwardsA, defendersA);
+    const shooterB = getShooter(forwardsB, defendersB);
 
-      const forwardsA = rosterA.slice(0, 12);
-      const defendersA = rosterA.slice(12, 20);
-      const goalieA = rosterA[20];
+    if (Math.random() < 0.45) {
+      scorersA.push({ name: shooterA, assists: [], minute });
+      goalsA++;
+    }
+    if (Math.random() < 0.45) {
+      scorersB.push({ name: shooterB, assists: [], minute });
+      goalsB++;
+    }
+    minute++;
+  }
 
-      const forwardsB = rosterB.slice(0, 12);
-      const defendersB = rosterB.slice(12, 20);
-      const goalieB = rosterB[20];
+  let winner = null;
+  while (goalsA === goalsB) {
+    const shooterA = getShooter(forwardsA, defendersA);
+    const shooterB = getShooter(forwardsB, defendersB);
 
-      const totalRating = ratingA + ratingB;
-      const ratioA = ratingA / totalRating;
-      const ratioB = ratingB / totalRating;
+    const scoreA = Math.random() < 0.45;
+    const scoreB = Math.random() < 0.45;
 
-      const shotsA = Math.max(15, Math.round(randomNormal(30 * ratioA, 4)));
-      const shotsB = Math.max(15, Math.round(randomNormal(30 * ratioB, 4)));
+    if (scoreA) {
+      scorersA.push({ name: shooterA, assists: [], minute });
+      goalsA++;
+    }
+    if (scoreB) {
+      scorersB.push({ name: shooterB, assists: [], minute });
+      goalsB++;
+    }
 
-      const savePctA = randomNormal(0.9, 0.02);
-      const savePctB = randomNormal(0.9, 0.02);
+    if (scoreA !== scoreB) {
+      winner = scoreA ? 'A' : 'B';
+      break;
+    }
+    minute++;
+  }
 
-      let goalsA = Math.max(0, shotsA - Math.round(shotsB * savePctB));
-      let goalsB = Math.max(0, shotsB - Math.round(shotsA * savePctA));
+  return { scorersA, scorersB, winner };
+}
 
-      let savesA = shotsB - goalsB;
-      let savesB = shotsA - goalsA;
+function simulateMatch() {
+  const teamA = document.getElementById("teamA").value;
+  const teamB = document.getElementById("teamB").value;
+  const ratingA = parseInt(document.getElementById("ratingA").value);
+  const ratingB = parseInt(document.getElementById("ratingB").value);
+  const rosterA = document.getElementById("rosterA").value.trim().split("\n");
+  const rosterB = document.getElementById("rosterB").value.trim().split("\n");
 
-      let scorersA = generateScorers(goalsA, forwardsA, defendersA, goalieA);
-      let scorersB = generateScorers(goalsB, forwardsB, defendersB, goalieB);
+  const forwardsA = rosterA.slice(0, 12);
+  const defendersA = rosterA.slice(12, 20);
+  const goalieA = rosterA[20];
 
-      let mvpA = selectMVP(scorersA, goalieA, goalsA, savesA);
-      let mvpB = selectMVP(scorersB, goalieB, goalsB, savesB);
+  const forwardsB = rosterB.slice(0, 12);
+  const defendersB = rosterB.slice(12, 20);
+  const goalieB = rosterB[20];
 
-      let resultHTML = "";
+  const shotsA = Math.floor(Math.random() * 20 + 20 + (ratingA - ratingB) / 2);
+  const shotsB = Math.floor(Math.random() * 20 + 20 + (ratingB - ratingA) / 2);
 
-      // Remíza → prodloužení
-      if (goalsA === goalsB) {
-        const otGoal = simulateOvertimeGoal(forwardsA, defendersA, forwardsB, defendersB);
-        if (otGoal) {
-          otGoal.minute = 61 + Math.floor(Math.random() * 5);
-          if (otGoal.team === 'A') {
-            goalsA++;
-            scorersA.push(otGoal);
-            mvpA = selectMVP(scorersA, goalieA, goalsA, savesA);
-          } else {
-            goalsB++;
-            scorersB.push(otGoal);
-            mvpB = selectMVP(scorersB, goalieB, goalsB, savesB);
-          }
-          resultHTML += `<strong>${teamA} ${goalsA}:${goalsB}pp ${teamB}</strong><br>`;
-        } else {
-          const shootoutResult = simulateShootout(forwardsA, defendersA, forwardsB, defendersB);
-          goalsA += shootoutResult.goalsA - (shootoutResult.winner === 'A' ? 1 : 0);
-          goalsB += shootoutResult.goalsB - (shootoutResult.winner === 'B' ? 1 : 0);
+  const savePercentA = 0.85 + Math.random() * 0.1;
+  const savePercentB = 0.85 + Math.random() * 0.1;
 
-          if (shootoutResult.winner === 'A') goalsA++;
-          else goalsB++;
+  let goalsA = Math.max(0, Math.floor(shotsA * (1 - savePercentB)));
+  let goalsB = Math.max(0, Math.floor(shotsB * (1 - savePercentA)));
 
-          scorersA = [...scorersA, ...shootoutResult.scorersA];
-          scorersB = [...scorersB, ...shootoutResult.scorersB];
-          mvpA = selectMVP(scorersA, goalieA, goalsA, savesA);
-          mvpB = selectMVP(scorersB, goalieB, goalsB, savesB);
-          resultHTML += `<strong>${teamA} ${goalsA}:${goalsB}sn ${teamB}</strong><br>`;
-        }
-      } else {
-        resultHTML += `<strong>${teamA} ${goalsA}:${goalsB} ${teamB}</strong><br>`;
-      }
+  let scorersA = [], scorersB = [];
+  for (let i = 0; i < goalsA; i++) {
+    const minute = Math.floor(Math.random() * 60);
+    const scorer = forwardsA[Math.floor(Math.random() * forwardsA.length)];
+    const assist1 = Math.random() < 0.7 ? forwardsA[Math.floor(Math.random() * forwardsA.length)] : null;
+    const assist2 = assist1 && Math.random() < 0.5 ? forwardsA[Math.floor(Math.random() * forwardsA.length)] : null;
+    scorersA.push({ name: scorer, assists: [assist1, assist2].filter(Boolean), minute });
+  }
+  for (let i = 0; i < goalsB; i++) {
+    const minute = Math.floor(Math.random() * 60);
+    const scorer = forwardsB[Math.floor(Math.random() * forwardsB.length)];
+    const assist1 = Math.random() < 0.7 ? forwardsB[Math.floor(Math.random() * forwardsB.length)] : null;
+    const assist2 = assist1 && Math.random() < 0.5 ? forwardsB[Math.floor(Math.random() * forwardsB.length)] : null;
+    scorersB.push({ name: scorer, assists: [assist1, assist2].filter(Boolean), minute });
+  }
 
-      resultHTML += `<ul>`;
-      resultHTML += `<li><strong>${teamA}</strong> - Rating: ${ratingA}, Střely: ${shotsA}, Góly: ${goalsA}, Zákroky: ${savesA}</li>`;
-      resultHTML += `<li><strong>${teamB}</strong> - Rating: ${ratingB}, Střely: ${shotsB}, Góly: ${goalsB}, Zákroky: ${savesB}</li>`;
-      resultHTML += `</ul>`;
+  let resultText = `<strong>${teamA} ${goalsA} : ${goalsB} ${teamB}</strong><br/>`;
+  let overtime = false;
+  let shootout = false;
+  let shootoutResult = null;
 
-      resultHTML += `<strong>Střelci ${teamA}:</strong><br>${scorersA.map(s => `${s.minute}' ${s.name}${s.assists.length ? ` (Asistence: ${s.assists.join(', ')})` : ''}`).join('<br>')}<br><br>`;
-      resultHTML += `<strong>Střelci ${teamB}:</strong><br>${scorersB.map(s => `${s.minute}' ${s.name}${s.assists.length ? ` (Asistence: ${s.assists.join(', ')})` : ''}`).join('<br>')}<br><br>`;
+  if (goalsA === goalsB) {
+    overtime = true;
+    if (Math.random() < 0.5) {
+      const minute = Math.floor(Math.random() * 5) + 61;
+      const isA = Math.random() < 0.5;
+      const scorer = isA ? forwardsA[Math.floor(Math.random() * forwardsA.length)] : forwardsB[Math.floor(Math.random() * forwardsB.length)];
+      const assist1 = Math.random() < 0.7 ? (isA ? forwardsA : forwardsB)[Math.floor(Math.random() * 12)] : null;
+      const assist2 = assist1 && Math.random() < 0.5 ? (isA ? forwardsA : forwardsB)[Math.floor(Math.random() * 12)] : null;
+      if (isA) { goalsA++; scorersA.push({ name: scorer, assists: [assist1, assist2].filter(Boolean), minute }); }
+      else { goalsB++; scorersB.push({ name: scorer, assists: [assist1, assist2].filter(Boolean), minute }); }
+      resultText = `<strong>${teamA} ${goalsA} : ${goalsB} ${teamB} pp</strong><br/>`;
+    } else {
+      shootout = true;
+      shootoutResult = simulateShootout(forwardsA, defendersA, forwardsB, defendersB);
+      if (shootoutResult.winner === 'A') goalsA++;
+      if (shootoutResult.winner === 'B') goalsB++;
+      scorersA.push(...shootoutResult.scorersA);
+      scorersB.push(...shootoutResult.scorersB);
+      resultText = `<strong>${teamA} ${goalsA} : ${goalsB} ${teamB} sn</strong><br/>`;
+    }
+  }
 
-      resultHTML += `<strong>Hráči zápasu:</strong><br>${teamA}: ${mvpA}<br>${teamB}: ${mvpB}`;
-      document.getElementById('result').innerHTML = resultHTML;
-    }
+  resultText += `Střely: ${shotsA} : ${shotsB}<br/>Zákroky: ${shotsB - goalsB} : ${shotsA - goalsA}<br/><br/>`;
 
-    function randomNormal(mean, stdDev) {
-      let u = 0, v = 0;
-      while(u === 0) u = Math.random();
-      while(v === 0) v = Math.random();
-      return mean + stdDev * Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-    }
+  resultText += `<u>Střelci ${teamA}:</u><br/>`;
+  scorersA.forEach(s => {
+    resultText += `${s.minute}'. ${s.name}`;
+    if (s.assists.length > 0) resultText += ` (Asistence: ${s.assists.join(", ")})`;
+    resultText += `<br/>`;
+  });
+  resultText += `<br/><u>Střelci ${teamB}:</u><br/>`;
+  scorersB.forEach(s => {
+    resultText += `${s.minute}'. ${s.name}`;
+    if (s.assists.length > 0) resultText += ` (Asistence: ${s.assists.join(", ")})`;
+    resultText += `<br/>`;
+  });
 
-    function generateScorers(goals, forwards, defenders, goalie = '') {
-      let scorers = [];
-      for (let i = 0; i < goals; i++) {
-        const minute = Math.floor(Math.random() * 60) + 1;
-        const scorerPool = Math.random() < 0.7 ? forwards : defenders;
-        const scorer = scorerPool[Math.floor(Math.random() * scorerPool.length)];
-
-        const assists = [];
-        const assistChance = Math.random();
-        const allPlayers = [...forwards, ...defenders, goalie].filter(p => p && p !== scorer);
-
-        if (assistChance < 0.7) {
-          assists.push(selectAssist(allPlayers));
-          let second;
-          do {
-            second = selectAssist(allPlayers);
-          } while (second === assists[0] && allPlayers.length > 1);
-          assists.push(second);
-        } else if (assistChance < 0.95) {
-          assists.push(selectAssist(allPlayers));
-        }
-
-        scorers.push({ minute, name: scorer, assists });
-      }
-      return scorers.sort((a, b) => a.minute - b.minute);
-    }
-
-    function selectAssist(players) {
-      return players[Math.floor(Math.random() * players.length)];
-    }
-
-    function selectMVP(scorers, goalie, goals, saves) {
-      if (goals === 0) {
-        const allPlayers = [...new Set(scorers.map(s => s.name))];
-        if (allPlayers.length === 0 && goalie) allPlayers.push(goalie);
-        if (allPlayers.length === 0) return "-";
-        return allPlayers[Math.floor(Math.random() * allPlayers.length)];
-      }
-
-      const stats = {};
-      for (const s of scorers) {
-        stats[s.name] = (stats[s.name] || 0) + 1;
-        for (const a of s.assists) {
-          stats[a] = (stats[a] || 0) + 0.5;
-        }
-      }
-      const sorted = Object.entries(stats).sort((a, b) => b[1] - a[1]);
-      return sorted.length > 0 ? sorted[0][0] : "-";
-    }
-
-    function simulateOvertimeGoal(forwardsA, defendersA, forwardsB, defendersB) {
-      if (Math.random() > 0.5) {
-        const team = Math.random() < 0.5 ? 'A' : 'B';
-        const scorerPool = team === 'A' ? (Math.random() < 0.7 ? forwardsA : defendersA) : (Math.random() < 0.7 ? forwardsB : defendersB);
-        const scorer = scorerPool[Math.floor(Math.random() * scorerPool.length)];
-        return { team, minute: 0, name: scorer, assists: [] };
-      }
-      return null;
-    }
-
-    function simulateShootout(forwardsA, defendersA, forwardsB, defendersB) {
-      const scorersA = [];
-      const scorersB = [];
-
-      function selectShooter(forwards, defenders) {
-        return Math.random() < 0.95
-          ? forwards[Math.floor(Math.random() * forwards.length)]
-          : defenders[Math.floor(Math.random() * defenders.length)];
-      }
-
-      let baseGoalsA = 0, baseGoalsB = 0;
-      let minute = 66;
-
-      for (let i = 0; i < 5; i++) {
-        const shooterA = selectShooter(forwardsA, defendersA);
-        const shooterB = selectShooter(forwardsB, defendersB);
-
-        const scoreA = Math.random() < 0.45;
-        const scoreB = Math.random() < 0.45;
-
-        if (scoreA) { baseGoalsA++; scorersA.push({ minute, name: shooterA, assists: [] }); }
-        if (scoreB) { baseGoalsB++; scorersB.push({ minute, name: shooterB, assists: [] }); }
-        minute++;
-      }
-
-      let suddenDeathWinner = null;
-      while (baseGoalsA === baseGoalsB) {
-        const shooterA = selectShooter(forwardsA, defendersA);
-        const shooterB = selectShooter(forwardsB, defendersB);
-
-        const scoreA = Math.random() < 0.45;
-        const scoreB = Math.random() < 0.45;
-
-        if (scoreA) scorersA.push({ minute, name: shooterA, assists: [] });
-        if (scoreB) scorersB.push({ minute, name: shooterB, assists: [] });
-
-        if (scoreA !== scoreB) {
-          suddenDeathWinner = scoreA ? 'A' : 'B';
-          break;
-        }
-        minute++;
-      }
-
-      let finalGoalsA = baseGoalsA;
-      let finalGoalsB = baseGoalsB;
-      if (suddenDeathWinner === 'A') finalGoalsA++;
-      if (suddenDeathWinner === 'B') finalGoalsB++;
-
-      return { goalsA: finalGoalsA, goalsB: finalGoalsB, scorersA, scorersB, winner: suddenDeathWinner };
-    }
-  </script>
+  document.getElementById("result").innerHTML = resultText;
+}
+  </script>
 </body>
 </html>
