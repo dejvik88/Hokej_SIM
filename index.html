@@ -12,14 +12,14 @@
       padding: 2rem;
     }
     .container {
-      max-width: 600px;
+      max-width: 700px;
       margin: 0 auto;
       background: white;
       padding: 2rem;
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-    input, button {
+    input, button, textarea {
       padding: 0.5rem;
       margin: 0.5rem 0;
       width: 100%;
@@ -31,15 +31,23 @@
       padding: 1rem;
       border-radius: 8px;
     }
+    textarea {
+      height: 100px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Hokejový Simulátor</h1>
+
     <input type="text" id="teamA" placeholder="Název týmu A" />
     <input type="number" id="ratingA" placeholder="Rating týmu A (0-100)" />
+    <textarea id="rosterA" placeholder="Soupiska týmu A (12 útočníků, 8 obránců, 1 brankář - každý na nový řádek)"></textarea>
+
     <input type="text" id="teamB" placeholder="Název týmu B" />
     <input type="number" id="ratingB" placeholder="Rating týmu B (0-100)" />
+    <textarea id="rosterB" placeholder="Soupiska týmu B (12 útočníků, 8 obránců, 1 brankář - každý na nový řádek)"></textarea>
+
     <button onclick="simulateMatch()">Simulovat zápas</button>
 
     <div class="result" id="result"></div>
@@ -49,8 +57,16 @@
     function simulateMatch() {
       const teamA = document.getElementById('teamA').value;
       const ratingA = parseInt(document.getElementById('ratingA').value);
+      const rosterA = document.getElementById('rosterA').value.trim().split('\n');
+
       const teamB = document.getElementById('teamB').value;
       const ratingB = parseInt(document.getElementById('ratingB').value);
+      const rosterB = document.getElementById('rosterB').value.trim().split('\n');
+
+      if (rosterA.length !== 21 || rosterB.length !== 21) {
+        alert('Každý tým musí mít přesně 21 hráčů: 12 útočníků, 8 obránců, 1 brankáře.');
+        return;
+      }
 
       const totalRating = ratingA + ratingB;
       const ratioA = ratingA / totalRating;
@@ -69,12 +85,22 @@
       const savesB = shotsA - goalsA;
 
       document.getElementById('result').innerHTML = `
-        <strong>${teamA}</strong> vs <strong>${teamB}</strong><br>
-        <ul>
-          <li><strong>${teamA}</strong> - Rating: ${ratingA}, Střely: ${shotsA}, Góly: ${goalsA}, Zákroky: ${savesA}</li>
-          <li><strong>${teamB}</strong> - Rating: ${ratingB}, Střely: ${shotsB}, Góly: ${goalsB}, Zákroky: ${savesB}</li>
-        </ul>
+        <strong>${teamA}</strong> vs <strong>${teamB}</strong><br><br>
+        <strong>${teamA}</strong><br>
+        Góly: ${goalsA}, Střely: ${shotsA}, Zákroky: ${savesA}<br>
+        <em>Soupiska:</em><br>${formatRoster(rosterA)}<br><br>
+        <strong>${teamB}</strong><br>
+        Góly: ${goalsB}, Střely: ${shotsB}, Zákroky: ${savesB}<br>
+        <em>Soupiska:</em><br>${formatRoster(rosterB)}
       `;
+    }
+
+    function formatRoster(roster) {
+      return roster.map((player, i) => {
+        if (i < 12) return `${i + 1}. Útočník: ${player}`;
+        else if (i < 20) return `${i + 1}. Obránce: ${player}`;
+        else return `${i + 1}. Brankář: ${player}`;
+      }).join('<br>');
     }
 
     function randomNormal(mean, stdDev) {
