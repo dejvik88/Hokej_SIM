@@ -12,14 +12,14 @@
       padding: 2rem;
     }
     .container {
-      max-width: 700px;
+      max-width: 800px;
       margin: 0 auto;
       background: white;
       padding: 2rem;
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-    input, textarea, button {
+    input, button, textarea {
       padding: 0.5rem;
       margin: 0.5rem 0;
       width: 100%;
@@ -31,25 +31,19 @@
       padding: 1rem;
       border-radius: 8px;
     }
-    textarea {
-      resize: vertical;
-      height: 100px;
-    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Hokejový Simulátor</h1>
-
     <input type="text" id="teamA" placeholder="Název týmu A" />
     <input type="number" id="ratingA" placeholder="Rating týmu A (0-100)" />
-    <textarea id="rosterA" placeholder="Soupiska týmu A (21 hráčů - 12 útočníků, 8 obránců, 1 brankář)"></textarea>
-
+    <textarea id="rosterA" rows="5" placeholder="Soupiska týmu A - každý hráč na nový řádek (12 útočníků, 8 obránců, 1 brankář)"></textarea>
     <input type="text" id="teamB" placeholder="Název týmu B" />
     <input type="number" id="ratingB" placeholder="Rating týmu B (0-100)" />
-    <textarea id="rosterB" placeholder="Soupiska týmu B (21 hráčů - 12 útočníků, 8 obránců, 1 brankář)"></textarea>
-
+    <textarea id="rosterB" rows="5" placeholder="Soupiska týmu B - každý hráč na nový řádek (12 útočníků, 8 obránců, 1 brankář)"></textarea>
     <button onclick="simulateMatch()">Simulovat zápas</button>
+
     <div class="result" id="result"></div>
   </div>
 
@@ -57,16 +51,18 @@
     function simulateMatch() {
       const teamA = document.getElementById('teamA').value;
       const ratingA = parseInt(document.getElementById('ratingA').value);
-      const rosterA = document.getElementById('rosterA').value.split('\n').map(p => p.trim()).filter(p => p);
-
       const teamB = document.getElementById('teamB').value;
       const ratingB = parseInt(document.getElementById('ratingB').value);
-      const rosterB = document.getElementById('rosterB').value.split('\n').map(p => p.trim()).filter(p => p);
+      const rosterA = document.getElementById('rosterA').value.trim().split('\n');
+      const rosterB = document.getElementById('rosterB').value.trim().split('\n');
 
-      if (rosterA.length !== 21 || rosterB.length !== 21) {
-        alert("Každý tým musí mít přesně 21 hráčů (12 útočníků, 8 obránců, 1 brankář)");
-        return;
-      }
+      const forwardsA = rosterA.slice(0, 12);
+      const defendersA = rosterA.slice(12, 20);
+      const goalieA = rosterA[20];
+
+      const forwardsB = rosterB.slice(0, 12);
+      const defendersB = rosterB.slice(12, 20);
+      const goalieB = rosterB[20];
 
       const totalRating = ratingA + ratingB;
       const ratioA = ratingA / totalRating;
@@ -84,37 +80,23 @@
       const savesA = shotsB - goalsB;
       const savesB = shotsA - goalsA;
 
-      const scorersA = generateScorers(rosterA, goalsA);
-      const scorersB = generateScorers(rosterB, goalsB);
+      const scorersA = generateScorers(goalsA, forwardsA, defendersA);
+      const scorersB = generateScorers(goalsB, forwardsB, defendersB);
 
-      document.getElementById('result').innerHTML = `
-        <strong>${teamA} ${goalsA}:${goalsB} ${teamB}</strong><br><br>
-        <em>Střelci ${teamA}:</em><br>${formatScorers(scorersA)}<br><br>
-        <em>Střelci ${teamB}:</em><br>${formatScorers(scorersB)}<br><br>
-        <ul>
-          <li><strong>${teamA}</strong> - Rating: ${ratingA}, Střely: ${shotsA}, Góly: ${goalsA}, Zákroky: ${savesA}</li>
-          <li><strong>${teamB}</strong> - Rating: ${ratingB}, Střely: ${shotsB}, Góly: ${goalsB}, Zákroky: ${savesB}</li>
-        </ul>
-      `;
-    }
+      const mvpA = selectMVP(scorersA);
+      const mvpB = selectMVP(scorersB);
 
-    function generateScorers(roster, goals) {
-      const forwards = roster.slice(0, 12);
-      const defenders = roster.slice(12, 20);
-      const scorers = [];
-      for (let i = 0; i < goals; i++) {
-        const isForward = Math.random() < 0.7;
-        const pool = isForward ? forwards : defenders;
-        const name = pool[Math.floor(Math.random() * pool.length)];
-        const minute = Math.floor(Math.random() * 60) + 1;
-        scorers.push({ name, minute });
-      }
-      return scorers.sort((a, b) => a.minute - b.minute);
-    }
+      let resultHTML = `<strong>${teamA} ${goalsA}:${goalsB} ${teamB}</strong><br><ul>`;
+      resultHTML += `<li><strong>${teamA}</strong> - Rating: ${ratingA}, Střely: ${shotsA}, Góly: ${goalsA}, Zákroky: ${savesA}</li>`;
+      resultHTML += `<li><strong>${teamB}</strong> - Rating: ${ratingB}, Střely: ${shotsB}, Góly: ${goalsB}, Zákroky: ${savesB}</li>`;
+      resultHTML += `</ul>`;
 
-    function formatScorers(scorers) {
-      if (scorers.length === 0) return "Žádné góly";
-      return scorers.map(s => `${s.minute}'. ${s.name}`).join('<br>');
+      resultHTML += `<strong>Střelci ${teamA}:</strong><br>${scorersA.map(s => `${s.minute}' ${s.name}${s.assists.length ? ` (Asistence: ${s.assists.join(', ')})` : ''}`).join('<br>')}<br><br>`;
+      resultHTML += `<strong>Střelci ${teamB}:</strong><br>${scorersB.map(s => `${s.minute}' ${s.name}${s.assists.length ? ` (Asistence: ${s.assists.join(', ')})` : ''}`).join('<br>')}<br><br>`;
+
+      resultHTML += `<strong>Hráči zápasu:</strong><br>${teamA}: ${mvpA}<br>${teamB}: ${mvpB}`;
+
+      document.getElementById('result').innerHTML = resultHTML;
     }
 
     function randomNormal(mean, stdDev) {
@@ -122,6 +104,57 @@
       while(u === 0) u = Math.random();
       while(v === 0) v = Math.random();
       return mean + stdDev * Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    }
+
+    function generateScorers(goals, forwards, defenders, goalie = '') {
+      let scorers = [];
+      for (let i = 0; i < goals; i++) {
+        const minute = Math.floor(Math.random() * 60) + 1;
+        const scorerPool = Math.random() < 0.7 ? forwards : defenders;
+        const scorer = scorerPool[Math.floor(Math.random() * scorerPool.length)];
+
+        const assists = [];
+        const assistChance = Math.random();
+        const allPlayers = [...forwards, ...defenders, goalie].filter(p => p && p !== scorer);
+
+        if (assistChance < 0.70) {
+          assists.push(selectAssist(allPlayers));
+          let second;
+          do {
+            second = selectAssist(allPlayers);
+          } while (second === assists[0] && allPlayers.length > 1);
+          assists.push(second);
+        } else if (assistChance < 0.95) {
+          assists.push(selectAssist(allPlayers));
+        }
+
+        scorers.push({ minute, name: scorer, assists });
+      }
+      return scorers.sort((a, b) => a.minute - b.minute);
+    }
+
+    function selectAssist(players) {
+      const rand = Math.random() * 100;
+      const forwards = players.slice(0, 12);
+      const defenders = players.slice(12, 20);
+      const goalie = players[20];
+
+      if (rand < 49 && forwards.length) return forwards[Math.floor(Math.random() * forwards.length)];
+      if (rand < 99 && defenders.length) return defenders[Math.floor(Math.random() * defenders.length)];
+      return goalie;
+    }
+
+    function selectMVP(scorers) {
+      if (scorers.length === 0) return "-";
+      const stats = {};
+      for (const s of scorers) {
+        stats[s.name] = (stats[s.name] || 0) + 1;
+        for (const a of s.assists) {
+          stats[a] = (stats[a] || 0) + 0.5;
+        }
+      }
+      const sorted = Object.entries(stats).sort((a, b) => b[1] - a[1]);
+      return sorted[0][0];
     }
   </script>
 </body>
