@@ -38,10 +38,10 @@
     <h1>Hokejový Simulátor</h1>
     <input type="text" id="teamA" placeholder="Název týmu A" />
     <input type="number" id="ratingA" placeholder="Rating týmu A (0-100)" />
-    <textarea id="rosterA" rows="5" placeholder="Soupiska týmu A - každý hráč na nový řádek (12 útočníků, 8 obránců, 1 brankář)"></textarea>
+    <textarea id="rosterA" rows="5" placeholder="Soupiska týmu A - 12 útočníků, 8 obránců, 1 brankář"></textarea>
     <input type="text" id="teamB" placeholder="Název týmu B" />
     <input type="number" id="ratingB" placeholder="Rating týmu B (0-100)" />
-    <textarea id="rosterB" rows="5" placeholder="Soupiska týmu B - každý hráč na nový řádek (12 útočníků, 8 obránců, 1 brankář)"></textarea>
+    <textarea id="rosterB" rows="5" placeholder="Soupiska týmu B - 12 útočníků, 8 obránců, 1 brankář"></textarea>
     <button onclick="simulateMatch()">Simulovat zápas</button>
 
     <div class="result" id="result"></div>
@@ -86,19 +86,12 @@
       let mvpA = selectMVP(scorersA, goalieA, goalsA, savesA);
       let mvpB = selectMVP(scorersB, goalieB, goalsB, savesB);
 
-      let resultHTML = `<strong>${teamA} ${goalsA}:${goalsB} ${teamB}</strong><br><ul>`;
-      resultHTML += `<li><strong>${teamA}</strong> - Rating: ${ratingA}, Střely: ${shotsA}, Góly: ${goalsA}, Zákroky: ${savesA}</li>`;
-      resultHTML += `<li><strong>${teamB}</strong> - Rating: ${ratingB}, Střely: ${shotsB}, Góly: ${goalsB}, Zákroky: ${savesB}</li>`;
-      resultHTML += `</ul>`;
+      let resultHTML = "";
 
-      resultHTML += `<strong>Střelci ${teamA}:</strong><br>${scorersA.map(s => `${s.minute}' ${s.name}${s.assists.length ? ` (Asistence: ${s.assists.join(', ')})` : ''}`).join('<br>')}<br><br>`;
-      resultHTML += `<strong>Střelci ${teamB}:</strong><br>${scorersB.map(s => `${s.minute}' ${s.name}${s.assists.length ? ` (Asistence: ${s.assists.join(', ')})` : ''}`).join('<br>')}<br><br>`;
-
-      // Pokud je remíza, pojďme do prodloužení
+      // Remíza → prodloužení
       if (goalsA === goalsB) {
         const otGoal = simulateOvertimeGoal(forwardsA, defendersA, forwardsB, defendersB);
         if (otGoal) {
-          // Gól v prodloužení mezi 61-65. minutou
           otGoal.minute = 61 + Math.floor(Math.random() * 5);
           if (otGoal.team === 'A') {
             goalsA++;
@@ -109,41 +102,34 @@
             scorersB.push(otGoal);
             mvpB = selectMVP(scorersB, goalieB, goalsB, savesB);
           }
-          resultHTML = `<strong>${teamA} ${goalsA}:${goalsB}pp ${teamB}</strong><br><ul>`;
-          resultHTML += `<li><strong>${teamA}</strong> - Rating: ${ratingA}, Střely: ${shotsA}, Góly: ${goalsA}, Zákroky: ${savesA}</li>`;
-          resultHTML += `<li><strong>${teamB}</strong> - Rating: ${ratingB}, Střely: ${shotsB}, Góly: ${goalsB}, Zákroky: ${savesB}</li>`;
-          resultHTML += `</ul>`;
-
-          resultHTML += `<strong>Střelci ${teamA}:</strong><br>${scorersA.map(s => `${s.minute}' ${s.name}${s.assists.length ? ` (Asistence: ${s.assists.join(', ')})` : ''}`).join('<br>')}<br><br>`;
-          resultHTML += `<strong>Střelci ${teamB}:</strong><br>${scorersB.map(s => `${s.minute}' ${s.name}${s.assists.length ? ` (Asistence: ${s.assists.join(', ')})` : ''}`).join('<br>')}<br><br>`;
+          resultHTML += `<strong>${teamA} ${goalsA}:${goalsB}pp ${teamB}</strong><br>`;
         } else {
-          // Pokud ani v prodloužení není gól, jdeme na nájezdy
           const shootoutResult = simulateShootout(forwardsA, defendersA, forwardsB, defendersB);
-          goalsA += shootoutResult.goalsA;
-          goalsB += shootoutResult.goalsB;
+          goalsA += shootoutResult.goalsA - (shootoutResult.winner === 'A' ? 1 : 0);
+          goalsB += shootoutResult.goalsB - (shootoutResult.winner === 'B' ? 1 : 0);
 
-          mvpA = selectMVP([...scorersA, ...shootoutResult.scorersA], goalieA, goalsA, savesA);
-          mvpB = selectMVP([...scorersB, ...shootoutResult.scorersB], goalieB, goalsB, savesB);
+          if (shootoutResult.winner === 'A') goalsA++;
+          else goalsB++;
 
-          // Výsledek s nájezdy - přičteme vítězný rozhodující gól k týmu, který vyhrál
-          let suffix = 'sn';
-          if (shootoutResult.winner === 'A') {
-            resultHTML = `<strong>${teamA} ${goalsA}:${goalsB}${suffix} ${teamB}</strong><br><ul>`;
-          } else {
-            resultHTML = `<strong>${teamA} ${goalsA}:${goalsB}${suffix} ${teamB}</strong><br><ul>`;
-          }
-
-          resultHTML += `<li><strong>${teamA}</strong> - Rating: ${ratingA}, Střely: ${shotsA}, Góly: ${goalsA}, Zákroky: ${savesA}</li>`;
-          resultHTML += `<li><strong>${teamB}</strong> - Rating: ${ratingB}, Střely: ${shotsB}, Góly: ${goalsB}, Zákroky: ${savesB}</li>`;
-          resultHTML += `</ul>`;
-
-          resultHTML += `<strong>Střelci ${teamA}:</strong><br>${[...scorersA, ...shootoutResult.scorersA].map(s => `${s.minute}' ${s.name}${s.assists.length ? ` (Asistence: ${s.assists.join(', ')})` : ''}`).join('<br>')}<br><br>`;
-          resultHTML += `<strong>Střelci ${teamB}:</strong><br>${[...scorersB, ...shootoutResult.scorersB].map(s => `${s.minute}' ${s.name}${s.assists.length ? ` (Asistence: ${s.assists.join(', ')})` : ''}`).join('<br>')}<br><br>`;
+          scorersA = [...scorersA, ...shootoutResult.scorersA];
+          scorersB = [...scorersB, ...shootoutResult.scorersB];
+          mvpA = selectMVP(scorersA, goalieA, goalsA, savesA);
+          mvpB = selectMVP(scorersB, goalieB, goalsB, savesB);
+          resultHTML += `<strong>${teamA} ${goalsA}:${goalsB}sn ${teamB}</strong><br>`;
         }
+      } else {
+        resultHTML += `<strong>${teamA} ${goalsA}:${goalsB} ${teamB}</strong><br>`;
       }
 
-      resultHTML += `<strong>Hráči zápasu:</strong><br>${teamA}: ${mvpA}<br>${teamB}: ${mvpB}`;
+      resultHTML += `<ul>`;
+      resultHTML += `<li><strong>${teamA}</strong> - Rating: ${ratingA}, Střely: ${shotsA}, Góly: ${goalsA}, Zákroky: ${savesA}</li>`;
+      resultHTML += `<li><strong>${teamB}</strong> - Rating: ${ratingB}, Střely: ${shotsB}, Góly: ${goalsB}, Zákroky: ${savesB}</li>`;
+      resultHTML += `</ul>`;
 
+      resultHTML += `<strong>Střelci ${teamA}:</strong><br>${scorersA.map(s => `${s.minute}' ${s.name}${s.assists.length ? ` (Asistence: ${s.assists.join(', ')})` : ''}`).join('<br>')}<br><br>`;
+      resultHTML += `<strong>Střelci ${teamB}:</strong><br>${scorersB.map(s => `${s.minute}' ${s.name}${s.assists.length ? ` (Asistence: ${s.assists.join(', ')})` : ''}`).join('<br>')}<br><br>`;
+
+      resultHTML += `<strong>Hráči zápasu:</strong><br>${teamA}: ${mvpA}<br>${teamB}: ${mvpB}`;
       document.getElementById('result').innerHTML = resultHTML;
     }
 
@@ -165,7 +151,7 @@
         const assistChance = Math.random();
         const allPlayers = [...forwards, ...defenders, goalie].filter(p => p && p !== scorer);
 
-        if (assistChance < 0.70) {
+        if (assistChance < 0.7) {
           assists.push(selectAssist(allPlayers));
           let second;
           do {
@@ -182,24 +168,11 @@
     }
 
     function selectAssist(players) {
-      const rand = Math.random() * 100;
-      const forwards = players.slice(0, 12);
-      const defenders = players.slice(12, 20);
-      const goalie = players[20];
-
-      if (rand < 49 && forwards.length) return forwards[Math.floor(Math.random() * forwards.length)];
-      if (rand < 99 && defenders.length) return defenders[Math.floor(Math.random() * defenders.length)];
-      return goalie;
+      return players[Math.floor(Math.random() * players.length)];
     }
 
     function selectMVP(scorers, goalie, goals, saves) {
-      // body hráče podle pravidel:
-      // Brankář s čistým kontem = 2 body
-      // Gól = 1 bod
-      // Asistence = 0.5 bodu
-      // Pokud tým nedá gól, MVP náhodný hráč z týmu s nejvyšším bodovým skóre
       if (goals === 0) {
-        // náhodný hráč z daných střelců nebo vyber náhodně z přítomných (náhodně z forwards/defenders)
         const allPlayers = [...new Set(scorers.map(s => s.name))];
         if (allPlayers.length === 0 && goalie) allPlayers.push(goalie);
         if (allPlayers.length === 0) return "-";
@@ -213,24 +186,14 @@
           stats[a] = (stats[a] || 0) + 0.5;
         }
       }
-      // Brankář s čistým kontem
-      if (goalie && goals === 0) {
-        stats[goalie] = (stats[goalie] || 0) + 2;
-      }
-      // Pokud gólů je víc než 0, brankář s čistým kontem není možné mít, takže nepočítáme extra body
-      // Vyber hráče s nejvyšším skóre
       const sorted = Object.entries(stats).sort((a, b) => b[1] - a[1]);
       return sorted.length > 0 ? sorted[0][0] : "-";
     }
 
     function simulateOvertimeGoal(forwardsA, defendersA, forwardsB, defendersB) {
-      // Náhodně rozhodne, zda padne gól v prodloužení (cca 50% šance)
       if (Math.random() > 0.5) {
         const team = Math.random() < 0.5 ? 'A' : 'B';
-        const scorerPool = team === 'A'
-          ? (Math.random() < 0.7 ? forwardsA : defendersA)
-          : (Math.random() < 0.7 ? forwardsB : defendersB);
-
+        const scorerPool = team === 'A' ? (Math.random() < 0.7 ? forwardsA : defendersA) : (Math.random() < 0.7 ? forwardsB : defendersB);
         const scorer = scorerPool[Math.floor(Math.random() * scorerPool.length)];
         return { team, minute: 0, name: scorer, assists: [] };
       }
@@ -241,70 +204,51 @@
       const scorersA = [];
       const scorersB = [];
 
-      // Vyber 5 nájezdníků na každé straně (95% útočník, 5% obránce)
       function selectShooter(forwards, defenders) {
         return Math.random() < 0.95
           ? forwards[Math.floor(Math.random() * forwards.length)]
           : defenders[Math.floor(Math.random() * defenders.length)];
       }
 
-      let goalsA = 0;
-      let goalsB = 0;
+      let baseGoalsA = 0, baseGoalsB = 0;
+      let minute = 66;
 
-      // Prvních 5 nájezdů
       for (let i = 0; i < 5; i++) {
-        const shooterA = selectShooter(forwardsA, defendersA);
-        const shooterB = selectShooter(forwardsB, defendersB);
-
-        const scoreA = Math.random() < 0.45; // cca 45% úspěšnost
-        const scoreB = Math.random() < 0.45;
-
-        if (scoreA) {
-          goalsA++;
-          scorersA.push({ minute: 61 + i, name: shooterA, assists: [] });
-        }
-        if (scoreB) {
-          goalsB++;
-          scorersB.push({ minute: 61 + i, name: shooterB, assists: [] });
-        }
-      }
-
-      // Pokud remíza, pokračujeme náhlou smrtí
-      let suddenDeathIndex = 5;
-      while (goalsA === goalsB) {
         const shooterA = selectShooter(forwardsA, defendersA);
         const shooterB = selectShooter(forwardsB, defendersB);
 
         const scoreA = Math.random() < 0.45;
         const scoreB = Math.random() < 0.45;
 
-        if (scoreA) {
-          goalsA++;
-          scorersA.push({ minute: 61 + suddenDeathIndex, name: shooterA, assists: [] });
-        }
-        if (scoreB) {
-          goalsB++;
-          scorersB.push({ minute: 61 + suddenDeathIndex, name: shooterB, assists: [] });
-        }
-        suddenDeathIndex++;
-
-        // Když jeden dá gól a druhý ne, rozhodnuto
-        if (scoreA !== scoreB) break;
+        if (scoreA) { baseGoalsA++; scorersA.push({ minute, name: shooterA, assists: [] }); }
+        if (scoreB) { baseGoalsB++; scorersB.push({ minute, name: shooterB, assists: [] }); }
+        minute++;
       }
 
-      // Určíme vítěze podle gólu z nájezdů
-      let winner = null;
-      if (goalsA > goalsB) {
-        winner = 'A';
-      } else if (goalsB > goalsA) {
-        winner = 'B';
+      let suddenDeathWinner = null;
+      while (baseGoalsA === baseGoalsB) {
+        const shooterA = selectShooter(forwardsA, defendersA);
+        const shooterB = selectShooter(forwardsB, defendersB);
+
+        const scoreA = Math.random() < 0.45;
+        const scoreB = Math.random() < 0.45;
+
+        if (scoreA) scorersA.push({ minute, name: shooterA, assists: [] });
+        if (scoreB) scorersB.push({ minute, name: shooterB, assists: [] });
+
+        if (scoreA !== scoreB) {
+          suddenDeathWinner = scoreA ? 'A' : 'B';
+          break;
+        }
+        minute++;
       }
 
-      // Přičteme vítězný rozhodující gól k vítěznému týmu
-      if (winner === 'A') goalsA++;
-      if (winner === 'B') goalsB++;
+      let finalGoalsA = baseGoalsA;
+      let finalGoalsB = baseGoalsB;
+      if (suddenDeathWinner === 'A') finalGoalsA++;
+      if (suddenDeathWinner === 'B') finalGoalsB++;
 
-      return { goalsA, goalsB, scorersA, scorersB, winner };
+      return { goalsA: finalGoalsA, goalsB: finalGoalsB, scorersA, scorersB, winner: suddenDeathWinner };
     }
   </script>
 </body>
