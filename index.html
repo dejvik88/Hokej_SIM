@@ -110,15 +110,14 @@
       const mvpA = selectMVP(scorersA, forwardsA, defendersA, goalieA, goalsB);
       const mvpB = selectMVP(scorersB, forwardsB, defendersB, goalieB, goalsA);
 
-      // Zranění
-      const injuredPlayers = [];
-      [ { team: teamA, players: [...forwardsA, ...defendersA] }, { team: teamB, players: [...forwardsB, ...defendersB] } ].forEach(entry => {
-        if (Math.random() < 0.05) {
-          const injured = entry.players[Math.floor(Math.random() * entry.players.length)];
-          const duration = Math.floor(Math.random() * 10) + 1;
-          injuredPlayers.push(`${injured} (${entry.team}) - zranění na ${duration} zápasů`);
-        }
-      });
+      let injuredPlayers = [];
+      if (Math.random() < 0.05) {
+        const team = Math.random() < 0.5 ? 'A' : 'B';
+        const allPlayers = team === 'A' ? [...forwardsA, ...defendersA, goalieA] : [...forwardsB, ...defendersB, goalieB];
+        const player = allPlayers[Math.floor(Math.random() * allPlayers.length)];
+        const games = Math.floor(Math.random() * 10) + 1;
+        injuredPlayers.push(`${player} (${team === 'A' ? teamA : teamB}) na ${games} kol`);
+      }
 
       let scoreSuffix = '';
       if (overtimeGoal) scoreSuffix = 'pp';
@@ -139,7 +138,7 @@
       resultHTML += `<strong>Hráči zápasu:</strong><br>${teamA}: ${mvpA}<br>${teamB}: ${mvpB}<br><br>`;
 
       if (injuredPlayers.length > 0) {
-        resultHTML += `<strong>Zranění:</strong><br>${injuredPlayers.join('<br>')}`;
+        resultHTML += `<strong>Zranění:</strong><br>${injuredPlayers.join('<br>')}<br>`;
       }
 
       document.getElementById('result').innerHTML = resultHTML;
@@ -200,20 +199,25 @@
     }
 
     function simulateShootout(forwardsA, defendersA, forwardsB, defendersB) {
-      const getShooter = (forwards, defenders) => {
-        return Math.random() < 0.95
-          ? forwards[Math.floor(Math.random() * forwards.length)]
-          : defenders[Math.floor(Math.random() * defenders.length)];
+      const getShooters = (forwards, defenders) => {
+        const pool = [...forwards, ...defenders];
+        return shuffleArray(pool).slice(0, 5);
       };
+
+      const tryShoot = () => Math.random() < 0.3;
 
       let log = [];
       let goalsA = 0;
       let goalsB = 0;
+
+      const shootersA = getShooters(forwardsA, defendersA);
+      const shootersB = getShooters(forwardsB, defendersB);
+
       for (let i = 0; i < 5; i++) {
-        const shooterA = getShooter(forwardsA, defendersA);
-        const shooterB = getShooter(forwardsB, defendersB);
-        const shotA = Math.random() < 0.3;
-        const shotB = Math.random() < 0.3;
+        const shooterA = shootersA[i];
+        const shooterB = shootersB[i];
+        const shotA = tryShoot();
+        const shotB = tryShoot();
         if (shotA) goalsA++;
         if (shotB) goalsB++;
         log.push(`Nájezd ${i + 1}: ${shooterA} (${shotA ? 'gól' : 'mimo'}) – ${shooterB} (${shotB ? 'gól' : 'mimo'})`);
@@ -221,11 +225,14 @@
 
       let sudden = 1;
       let winner = null;
+      const suddenPoolA = [...forwardsA, ...defendersA];
+      const suddenPoolB = [...forwardsB, ...defendersB];
+
       while (goalsA === goalsB) {
-        const shooterA = getShooter(forwardsA, defendersA);
-        const shooterB = getShooter(forwardsB, defendersB);
-        const shotA = Math.random() < 0.3;
-        const shotB = Math.random() < 0.3;
+        const shooterA = suddenPoolA[Math.floor(Math.random() * suddenPoolA.length)];
+        const shooterB = suddenPoolB[Math.floor(Math.random() * suddenPoolB.length)];
+        const shotA = tryShoot();
+        const shotB = tryShoot();
         let line = `Náhlá smrt ${sudden}: `;
         if (shotA !== shotB) {
           line += `<strong>${shooterA} (${shotA ? 'gól' : 'mimo'}) – ${shooterB} (${shotB ? 'gól' : 'mimo'})</strong>`;
@@ -234,11 +241,19 @@
           line += `${shooterA} (${shotA ? 'gól' : 'mimo'}) – ${shooterB} (${shotB ? 'gól' : 'mimo'})`;
         }
         log.push(line);
-        if (winner) break;
         sudden++;
       }
 
       return { log, winner };
+    }
+
+    function shuffleArray(array) {
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
     }
   </script>
 </body>
