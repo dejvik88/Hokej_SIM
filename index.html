@@ -110,6 +110,16 @@
       const mvpA = selectMVP(scorersA, forwardsA, defendersA, goalieA, goalsB);
       const mvpB = selectMVP(scorersB, forwardsB, defendersB, goalieB, goalsA);
 
+      // Zranění
+      const injuredPlayers = [];
+      [ { team: teamA, players: [...forwardsA, ...defendersA] }, { team: teamB, players: [...forwardsB, ...defendersB] } ].forEach(entry => {
+        if (Math.random() < 0.05) {
+          const injured = entry.players[Math.floor(Math.random() * entry.players.length)];
+          const duration = Math.floor(Math.random() * 10) + 1;
+          injuredPlayers.push(`${injured} (${entry.team}) - zranění na ${duration} zápasů`);
+        }
+      });
+
       let scoreSuffix = '';
       if (overtimeGoal) scoreSuffix = 'pp';
       else if (shootoutResult) scoreSuffix = 'sn';
@@ -126,7 +136,11 @@
         resultHTML += `<strong>Nájezdy:</strong><br>${shootoutResult.log.join('<br>')}<br><br>`;
       }
 
-      resultHTML += `<strong>Hráči zápasu:</strong><br>${teamA}: ${mvpA}<br>${teamB}: ${mvpB}`;
+      resultHTML += `<strong>Hráči zápasu:</strong><br>${teamA}: ${mvpA}<br>${teamB}: ${mvpB}<br><br>`;
+
+      if (injuredPlayers.length > 0) {
+        resultHTML += `<strong>Zranění:</strong><br>${injuredPlayers.join('<br>')}`;
+      }
 
       document.getElementById('result').innerHTML = resultHTML;
     }
@@ -163,13 +177,7 @@
     }
 
     function selectAssist(players) {
-      const rand = Math.random() * 100;
-      const forwards = players.slice(0, 12);
-      const defenders = players.slice(12, 20);
-      const goalie = players[20];
-      if (rand < 95 && forwards.length) return forwards[Math.floor(Math.random() * forwards.length)];
-      if (defenders.length) return defenders[Math.floor(Math.random() * defenders.length)];
-      return goalie;
+      return players[Math.floor(Math.random() * players.length)];
     }
 
     function selectMVP(scorers, forwards, defenders, goalie, goalsAgainst) {
@@ -201,9 +209,6 @@
       let log = [];
       let goalsA = 0;
       let goalsB = 0;
-      let round = 0;
-      let history = [];
-
       for (let i = 0; i < 5; i++) {
         const shooterA = getShooter(forwardsA, defendersA);
         const shooterB = getShooter(forwardsB, defendersB);
@@ -212,7 +217,6 @@
         if (shotA) goalsA++;
         if (shotB) goalsB++;
         log.push(`Nájezd ${i + 1}: ${shooterA} (${shotA ? 'gól' : 'mimo'}) – ${shooterB} (${shotB ? 'gól' : 'mimo'})`);
-        history.push({ shooterA, shotA, shooterB, shotB });
       }
 
       let sudden = 1;
